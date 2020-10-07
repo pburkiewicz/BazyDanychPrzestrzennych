@@ -1,13 +1,14 @@
 /* 1 */
-CREATE DATABASE s290734 ;
+CREATE DATABASE s290734;
 /* 2 */
 CREATE SCHEMA firma;
-/* 3 */
+/* 3 */ 
 CREATE ROLE ksiegowosc;
 GRANT SELECT ON ALL TABLES IN SCHEMA firma to ksiegowosc;
+
 /* 4 */
 /* a */
-SET search_path TO firma;
+SET search_path TO firma; /* zmiana zmiennej search_path, by kontrolowac do ktorego schematu odnosza sie wszystkie operacje */
 CREATE TABLE pracownicy (id_pracownika SERIAL UNIQUE NOT NULL, imie VARCHAR , nazwisko VARCHAR, adres VARCHAR, telefon VARCHAR);
 CREATE TABLE godziny (id_godziny SERIAL UNIQUE NOT NULL, data DATE, liczba_godzin INTEGER, id_pracownika BIGINT);
 CREATE TABLE pensja_stanowisko (id_pensji SERIAL UNIQUE NOT NULL, stanowisko VARCHAR, kwota NUMERIC(10,2));
@@ -36,8 +37,8 @@ COMMENT ON TABLE godziny IS 'Ilość godzin przepracowanych przez pracownika w d
 COMMENT ON TABLE pensja_stanowisko IS 'Wysokość pensji w zależności od zajmowanego stanowiska';
 COMMENT ON TABLE premia IS 'Wysokość premii w zależności od jej rodzaju';
 COMMENT ON TABLE wynagrodzenie IS 'Wysokość wynagrodzenia za miesiąc pracy';
-/* 5 */
 
+/* f */
 INSERT INTO pracownicy (imie, nazwisko,adres, telefon) VALUES 
 ('Jan', 'Kowalski', 'Kraków ul. Zwierzyniecka 23/2', '111111111'),
 ('Anna', 'Nowak', 'Kraków ul. Cicha 3', '222222222'),
@@ -49,9 +50,6 @@ INSERT INTO pracownicy (imie, nazwisko,adres, telefon) VALUES
 ('Katarzyna', 'Nowacka', 'Kraków ul. Nowosądecka 3', '888888888'),
 ('Maciej', 'Klon', 'Kraków ul. Opolska 5', '999999999'),
 ('Aleksandra', 'Matoga', 'Kraków ul. Nowosądecka 56', '000000000');
-
-ALTER TABLE godziny ADD COLUMN miesiac INT ;
-ALTER TABLE godziny ADD COLUMN tydzien INT ;
 
 INSERT INTO godziny (data, liczba_godzin, id_pracownika) VALUES 
 ('2020-10-10',120, 1),
@@ -90,14 +88,11 @@ INSERT INTO premia (rodzaj, kwota) VALUES
 ('awans', 250.44),
 ('za ilościowy wzrost wykonywanych zadań', 120.2),
 ('za poprawę jakości', 150.4),
-('za obniżenie kosztów działalności', 90.0),
+('za obniżenie kosztów dzialalności', 90.0),
 ('za oszczędność surowców, energii i innych środków', 163.2),
 ('za poprawę wykorzystania czasu pracy ludzi i maszyn', 65.2),
 ('za terminowe lub przedterminowe wykonanie zadań', 190.12),
-('za bezwypadkową pracę',50.0),
-/* c */
-('brak', 0);
-
+('za bezwypadkową pracę',50.0);
 
 INSERT INTO pensja_stanowisko (stanowisko, kwota ) VALUES 
 ('ksiegowy', 1200),
@@ -115,7 +110,6 @@ INSERT INTO pensja_stanowisko (stanowisko, kwota ) VALUES
 
 INSERT INTO wynagrodzenie (id_pracownika, data, id_godziny, id_pensji, id_premii) VALUES
 (1,'2020-11-10', 1,4,5),
-(2,'2020-11-10', 2,1,10),
 (3,'2020-11-10', 3,2,5),
 (4,'2020-11-10', 4,9,1),
 (5,'2020-11-10', 5,1,4),
@@ -130,20 +124,34 @@ INSERT INTO wynagrodzenie (id_pracownika, data, id_godziny, id_pensji, id_premii
 (7,'2020-10-10', 14,1,1),
 (6,'2020-10-10', 15,8,1);
 
-
+/* 5 */
 /* a */
+
+ALTER TABLE godziny ADD COLUMN miesiac INT ;
+ALTER TABLE godziny ADD COLUMN tydzien INT ;
+
+UPDATE godziny SET tydzien =  EXTRACT(WEEK FROM data);
+UPDATE godziny SET miesiac =  EXTRACT(MONTH FROM data);
 
 /* b */
 ALTER TABLE wynagrodzenie ALTER COLUMN data TYPE VARCHAR;
+/* c */
+INSERT INTO premia (rodzaj, kwota) VALUES ('brak', 0);
 
+INSERT INTO wynagrodzenie (id_pracownika, data, id_godziny, id_pensji, id_premii) VALUES
+(2,'2020-11-10', 2,1,10);
 /* 6 */
 /* a */
 SELECT id_pracownika, nazwisko FROM pracownicy;
 /* b */
-SELECT id_pracownika FROM wynagrodzenie INNER JOIN pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji) WHERE pensja_stanowisko.kwota > 1000;
+/* Zalozenie, ze placa = pensja + premia */
+SELECT id_pracownika FROM wynagrodzenie INNER JOIN pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji)
+INNER JOIN premia ON (wynagrodzenie.id_premii = premia.id_premii) WHERE pensja_stanowisko.kwota+premia.kwota > 1000;
 /* c */
 SELECT DISTINCT wynagrodzenie.id_pracownika FROM wynagrodzenie INNER JOIN pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji)
-WHERE pensja_stanowisko.kwota > 1200 AND id_premii IN (SELECT id_premii FROM premia WHERE rodzaj = 'brak');
+INNER JOIN premia ON (wynagrodzenie.id_premii = premia.id_premii) 
+WHERE pensja_stanowisko.kwota+premia.kwota > 2000 AND premia.rodzaj = 'brak';
+
 /* d */
 SELECT * FROM pracownicy WHERE imie LIKE 'J%';
 /* e */
@@ -204,7 +212,7 @@ INNER JOIN wynagrodzenie ON (wynagrodzenie.id_pracownika = pracownicy.id_pracown
 INNER JOIN pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji);
 
 /* 9 */
-SELECT FORMAT('Pracownik %s %s, w dniu %s otrzymał pensję całkowitą na kwotę %s zł, gdzie wynagrodzenie zasadnicze wynosiło: %s zł, premia: %s zł, nadgodziny: %s zł',
+SELECT FORMAT('Pracownik %s %s, w dniu %s otrzymal pensję calkowitą na kwotę %s zl, gdzie wynagrodzenie zasadnicze wynosilo: %s zl, premia: %s zl, nadgodziny: %s zl',
 imie, nazwisko, wynagrodzenie.data, pensja_stanowisko.kwota+premia.kwota, pensja_stanowisko.kwota, premia.kwota, ((liczba_godzin-160) * pensja_stanowisko.kwota/160))
 FROM wynagrodzenie INNER JOIN  pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji)
 INNER JOIN premia ON (wynagrodzenie.id_premii = premia.id_premii)
