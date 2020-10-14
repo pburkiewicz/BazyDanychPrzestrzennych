@@ -8,8 +8,7 @@ https://my.vertabelo.com/public-model-view/05HxsuJtjpDq8PXBVwNYUP9hh1Hid3UzojX31
 
 W konsoli:
 psql -U postgres -d s290734 -c "CREATE SCHEMA Sklep;"
-
-
+psql -U postgres -d s290734 -f Zadanie5_Cwiczenie2_create_VERTABELO_1.sql
 */
 
 
@@ -28,7 +27,7 @@ INSERT INTO  sklep.producenci  (nazwa_producenta , mail, telefon) VALUES
 ('firma10', 'firma10@firma.pl', '000000000');
 
 
-INSERT INTO  sklep.produkty  (nazwa_produktu, cena, Producenci_id_producenta ) VALUES 
+INSERT INTO  sklep.produkty  (nazwa_produktu, cena, id_producenta ) VALUES 
 ('produkt1', 10.7, 1),
 ('produkt2', 12.3, 1),
 ('produkt3', 1.2, 1),
@@ -41,37 +40,37 @@ INSERT INTO  sklep.produkty  (nazwa_produktu, cena, Producenci_id_producenta ) V
 ('produkt10', 2.5, 5);
 
 
-INSERT INTO  sklep.zamowienia  (data, Produkty_id_produktu  ) VALUES 
-('2020-01-10', 1),
-('2020-01-10', 1),
-('2020-01-10', 1),
-('2020-01-10', 2),
-('2020-01-10', 2),
-('2020-01-10', 3),
-('2020-01-25', 7),
-('2020-01-26', 8),
-('2020-01-25', 1),
-('2020-01-25', 9),
-('2020-01-25', 9),
-('2020-01-25', 10),
-('2020-05-10', 1),
-('2020-05-10', 2),
-('2020-05-10', 3),
-('2020-05-10', 7),
-('2020-05-10', 7),
-('2020-05-10', 7),
-('2020-05-25', 7),
-('2020-05-26', 8),
-('2020-05-25', 1),
-('2020-05-25', 4),
-('2020-05-25', 4),
-('2020-05-27', 10),
-('2020-07-25', 7),
-('2020-07-03', 6),
-('2020-07-03', 6),
-('2020-07-01', 9),
-('2020-07-01', 9),
-('2020-07-27', 10);
+INSERT INTO  sklep.zamowienia  (data, id_produktu, liczba_produktow ) VALUES 
+('2020-01-10', 1, 5),
+('2020-01-10', 1, 10),
+('2020-01-10', 1, 2),
+('2020-01-10', 2,2),
+('2020-01-10', 2,30),
+('2020-01-10', 3,1),
+('2020-01-25', 7,4),
+('2020-01-26', 8,6),
+('2020-01-25', 1,11),
+('2020-01-25', 9,33),
+('2020-01-25', 9,54),
+('2020-01-25', 10,100),
+('2020-05-10', 1,32),
+('2020-05-10', 2,42),
+('2020-05-10', 3,34),
+('2020-05-10', 7,7),
+('2020-05-10', 7,63),
+('2020-05-10', 7,3),
+('2020-05-25', 7,23),
+('2020-05-26', 8,43),
+('2020-05-25', 1,21),
+('2020-05-25', 4,12),
+('2020-05-25', 4,9),
+('2020-05-27', 10,1),
+('2020-07-25', 7,5),
+('2020-07-03', 6,12),
+('2020-07-03', 6,8),
+('2020-07-01', 9,12),
+('2020-07-01', 9,1),
+('2020-07-27', 10,76);
 
 
 /* 7 */
@@ -101,16 +100,44 @@ ALTER DATABASE backup_s290734 RENAME TO s290734;
 /* 11 */
 
 /* a */
+SELECT FORMAT('Producent %s, liczba zamowien %s, wartosc zamowienia %s zl', p.nazwa_producenta,  SUM(ilosc_sztuk), SUM(kwota)) 
+FROM sklep.producenci AS p INNER JOIN ( SELECT nazwa_producenta, nazwa_produktu, SUM(liczba_produktow) AS ilosc_sztuk, SUM(liczba_produktow*cena) AS kwota FROM sklep.producenci AS producenci
+INNER JOIN sklep.produkty AS produkty ON  produkty.id_producenta = producenci.id_producenta
+INNER JOIN sklep.zamowienia AS zamowienia ON zamowienia.id_produktu = produkty.id_produktu
+GROUP BY nazwa_producenta, nazwa_produktu) AS x ON p.nazwa_producenta = x.nazwa_producenta GROUP BY p.nazwa_producenta;
 /* b */
+SELECT FORMAT('Produkt %s, liczba zamowien %s', nazwa_produktu, COUNT(id_zamowienia))
+FROM sklep.produkty AS produkty INNER JOIN sklep.zamowienia ON produkty.id_produktu = zamowienia.id_produktu
+GROUP BY produkty.id_produktu;
+
 /* c */
-/* d */
+SELECT * FROM sklep.produkty NATURAL JOIN sklep.zamowienia;
+/* d  */
+/*
+Pole data zostalo dodane w trakcie tworzenia tabel
+*/
+ 
 /* e */
+SELECT * FROM sklep.zamowienia WHERE EXTRACT(MONTH FROM data) = 1;
 /* f */
-/* g */
+SELECT to_char(zamowienia.data,'day') AS dzien_tygodnia, SUM(liczba_produktow) AS suma FROM sklep.zamowienia AS zamowienia
+INNER JOIN sklep.produkty AS produkty ON zamowienia.id_produktu = produkty.id_produktu
+GROUP BY dzien_tygodnia ORDER BY suma DESC;
+
+/* g  3 najczesciej kupowane produkty */
+SELECT nazwa_produktu, SUM(liczba_produktow) AS suma FROM sklep.zamowienia AS zamowienia
+INNER JOIN sklep.produkty AS produkty ON zamowienia.id_produktu = produkty.id_produktu
+GROUP BY nazwa_produktu ORDER BY suma DESC LIMIT 3;
 
 /* 12 */
 
 /* a */
+SELECT FORMAT('Produkt %s, ktorego producentem jest %s, zamowiono %s razy', UPPER(nazwa_produktu), LOWER(nazwa_producenta), liczba_produktow) AS opis
+FROM sklep.zamowienia AS zamowienia 
+INNER JOIN sklep.produkty AS produkty ON zamowienia.id_produktu = produkty.id_produktu
+INNER JOIN sklep.producenci AS producenci ON produkty.id_producenta = producenci.id_producenta
+ORDER BY liczba_produktow DESC;
+
 /* b */
 /* c */
 /* d */
