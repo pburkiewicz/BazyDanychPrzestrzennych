@@ -139,33 +139,161 @@ INNER JOIN sklep.producenci AS producenci ON produkty.id_producenta = producenci
 ORDER BY liczba_produktow DESC;
 
 /* b */
+SELECT zamowienia.id_zamowienia, zamowienia.data, liczba_produktow*cena AS wartosc_zamowienia FROM sklep.zamowienia AS zamowienia  INNER JOIN  sklep.produkty AS produkty 
+ON zamowienia.id_produktu = produkty.id_produktu 
+ORDER BY wartosc_zamowienia OFFSET 3 ;
 /* c */
+CREATE TABLE sklep.klienci (id_klienta BIGSERIAL PRIMARY KEY, email VARCHAR, telefon VARCHAR);
+INSERT INTO  sklep.klienci (email, telefon) VALUES 
+('klient1@klient.pl', '01111111'),
+('klient2@klient.pl', '022222222'),
+('klient3@klient.pl', '033333333'),
+('klient4@klient.pl', '044444444'),
+('klient5@klient.pl', '055555555'),
+('klient6@klient.pl', '066666666'),
+('klient7@klient.pl', '077777777'),
+('klient8@klient.pl', '088888888'),
+('klient9@klient.pl', '099999999'),
+('klient10@klient.pl', '100000000');
+
 /* d */
+ALTER TABLE sklep.zamowienia ADD COLUMN id_klienta BIGINT;
+ALTER TABLE sklep.zamowienia ADD FOREIGN KEY (id_klienta) REFERENCES klienci(id_klienta);
+
+UPDATE sklep.zamowienia SET id_klienta=1 WHERE id_zamowienia%29 =0;
+UPDATE sklep.zamowienia SET id_klienta=2 WHERE id_zamowienia%23 =0;
+UPDATE sklep.zamowienia SET id_klienta=5 WHERE id_zamowienia%19 =0;
+UPDATE sklep.zamowienia SET id_klienta=6 WHERE id_zamowienia%17 =0;
+UPDATE sklep.zamowienia SET id_klienta=9 WHERE id_zamowienia%13 =0;
+UPDATE sklep.zamowienia SET id_klienta=10 WHERE id_zamowienia%11 =0;
+UPDATE sklep.zamowienia SET id_klienta=3 WHERE id_zamowienia%7 =0;
+UPDATE sklep.zamowienia SET id_klienta=4 WHERE id_zamowienia%5 =0;
+UPDATE sklep.zamowienia SET id_klienta=7 WHERE id_zamowienia%3 =0;
+UPDATE sklep.zamowienia SET id_klienta=8 WHERE id_zamowienia%2 =0;
+UPDATE sklep.zamowienia SET id_klienta=3 WHERE id_zamowienia=1;
+
 /* e */
+SELECT klienci.id_klienta, klienci.email, produkty.nazwa_produktu, zamowienia.liczba_produktow, zamowienia.liczba_produktow*produkty.cena AS wartosc_zamowienia 
+FROM sklep.klienci AS klienci LEFT JOIN sklep.zamowienia AS zamowienia ON zamowienia.id_klienta = klienci.id_klienta
+LEFT JOIN sklep.produkty AS produkty ON zamowienia.id_produktu = produkty.id_produktu ORDER BY klienci.id_klienta;
+
 /* f */
+
+(SELECT 'NAJCZESCIEJ ZAMAWIAJACY' AS zamawiajacy, klienci.id_klienta, klienci.email, 
+SUM(zamowienia.liczba_produktow) AS suma_zamowien, 
+SUM(zamowienia.liczba_produktow*produkty.cena) AS wartosc_zamowienia 
+FROM sklep.klienci AS klienci
+INNER JOIN sklep.zamowienia AS zamowienia ON zamowienia.id_klienta = klienci.id_klienta
+INNER JOIN sklep.produkty AS produkty ON zamowienia.id_produktu = produkty.id_produktu
+GROUP BY klienci.id_klienta
+ORDER BY suma_zamowien DESC
+LIMIT 1)
+
+UNION ALL
+
+(SELECT 'NAJRZADZIEJ ZAMAWIAJACY' AS zamawiajacy, klienci.id_klienta, klienci.email, 
+SUM(zamowienia.liczba_produktow) AS suma_zamowien, 
+SUM(zamowienia.liczba_produktow*produkty.cena) AS wartosc_zamowienia 
+FROM sklep.klienci AS klienci
+INNER JOIN sklep.zamowienia AS zamowienia ON zamowienia.id_klienta = klienci.id_klienta
+INNER JOIN sklep.produkty AS produkty ON zamowienia.id_produktu = produkty.id_produktu
+GROUP BY klienci.id_klienta
+ORDER BY suma_zamowien ASC
+LIMIT 1);
+
+
 /* g */
+SELECT produkty.id_produktu FROM sklep.produkty AS produkty 
+LEFT JOIN sklep.zamowienia AS zamowienia ON zamowienia.id_produktu = produkty.id_produktu 
+WHERE zamowienia.id_produktu IS NULL;
+
+DELETE FROM sklep.produkty WHERE id_produktu IN 
+(SELECT produkty.id_produktu FROM sklep.produkty AS produkty 
+LEFT JOIN sklep.zamowienia AS zamowienia ON zamowienia.id_produktu = produkty.id_produktu 
+WHERE zamowienia.id_produktu IS NULL);
 
 /* 13 */
 
 /* a */
+CREATE TABLE numer (liczba DECIMAL(4,0));
 /* b */
-/* c */
-/* d */
-/* e */
-/* f */
+CREATE SEQUENCE liczba_seq INCREMENT BY 5  MINVALUE 0 MAXVALUE 125 START WITH 100 CYCLE;
 
+/* c */
+DO $$
+BEGIN
+   FOR i IN 1..7 LOOP
+      INSERT INTO numer VALUES (nextval('liczba_seq'));                   
+   END LOOP;
+END $$;
+
+/* d */
+ALTER SEQUENCE liczba_seq INCREMENT BY 6;
+/* e */
+SELECT currval('liczba_seq');
+SELECT nextval('liczba_seq');
+/* f */
+DROP SEQUENCE liczba_seq;
 
 /* 14 */
 
 /* a */
+
+SELECT usename FROM pg_catalog.pg_user ;
+/* LUB */
+SELECT usename FROM pg_shadow;
 /* b */
+CREATE USER superuser290734 SUPERUSER LOGIN PASSWORD 'superuser';
+
+CREATE USER guest290734 LOGIN PASSWORD 'guest';
+GRANT CONNECT ON DATABASE s290734 TO guest290734;
+GRANT USAGE ON SCHEMA sklep, firma  TO guest290734;
+GRANT SELECT ON ALL TABLES IN SCHEMA sklep, firma  TO guest290734;
+
+SELECT usename FROM pg_catalog.pg_user;
 /* c */
+ALTER USER superuser290734  WITH NOSUPERUSER;
+ALTER USER superuser290734 RENAME TO student;
+ALTER USER student PASSWORD 'student';
+GRANT CONNECT ON DATABASE s290734 TO student;
+GRANT USAGE ON SCHEMA sklep, firma  TO student;
+GRANT SELECT ON ALL TABLES IN SCHEMA sklep, firma  TO student;
+DROP USER guest290734;
 
 
 /* 15 */
 
 /* a */
+BEGIN;
+UPDATE sklep.produkty SET cena=cena+10;
+COMMIT;
 /* b */
+BEGIN;
+UPDATE sklep.produkty SET cena=cena+(cena*0.1) WHERE id_produktu=3;
+SAVEPOINT S1;
+UPDATE sklep.produkty SET cena=cena+(cena*0.25);
+SAVEPOINT S2;
+DELETE FROM sklep.klienci WHERE id_klienta = 
+(SELECT zamowienia.id_klienta FROM sklep.zamowienia AS zamowienia
+INNER JOIN sklep.produkty AS produkty ON zamowienia.id_produktu=produkty.id_produktu
+GROUP BY zamowienia.id_klienta
+ORDER BY SUM(zamowienia.liczba_produktow) DESC
+LIMIT 1);
+ROLLBACK TO SAVEPOINT S1;
+ROLLBACK TO SAVEPOINT S2;  /* punkt S2 nie istnieje */
+ROLLBACK;
+
 /* c */
+CREATE OR REPLACE FUNCTION udzial_procentowy() 
+RETURNS TABLE(opis TEXT)
+AS $$
+BEGIN
+RETURN QUERY SELECT FORMAT('%s - %s%%', produkty.nazwa_produktu, 
+ROUND(100*SUM(zamowienia.liczba_produktow)/(SELECT SUM(liczba_produktow) FROM sklep.zamowienia)))
+FROM sklep.zamowienia AS zamowienia
+INNER JOIN sklep.produkty AS produkty ON zamowienia.id_produktu=produkty.id_produktu
+GROUP BY produkty.nazwa_produktu;
+END;
+$$ LANGUAGE plpgsql;
 
 
