@@ -1,7 +1,7 @@
 /* 
 W repozytorium znajdują się screeny niektórych rozwiązań sprawdzonych w QGisie.
-Niestety niewszystkie wyniki wyglądają zadowalająco. Część z nich jest dziwnie ucięta, 
-jednak po eksporcie do formatu .tiff są wyglądają prawidłowo.
+Niestety nie wszystkie wyniki wyglądają zadowalająco. Część z nich jest dziwnie ucięta, 
+jednak po eksporcie do formatu .tiff wyglądają prawidłowo.
 */
 CREATE DATABASE raster;
 \c raster
@@ -16,7 +16,7 @@ ALTER SCHEMA schema_name RENAME TO burkiewicz;
 
 
 -- ładowanie rastru przy użyciu pliku .sql
--- C:\Program Files\PostgreSQL\12\bin\raster2pgsql.exe -s 3763 -N -32767 -t 100x100 -I -C -M -d .\srtm_1arc_v3.tif rasters.dem > .\dem.sql
+-- "C:\Program Files\PostgreSQL\12\bin\raster2pgsql.exe" -s 3763 -N -32767 -t 100x100 -I -C -M -d .\srtm_1arc_v3.tif rasters.dem > .\dem.sql
 
 -- ładowanie rastru bezpośrednio do bazy
 -- "C:\Program Files\PostgreSQL\12\bin\raster2pgsql.exe" -s 3763 -N -32767 -t 100x100 -I -C -M -d .\srtm_1arc_v3.tif rasters.dem | psql -d raster -h localhost -U postgres -p 5432
